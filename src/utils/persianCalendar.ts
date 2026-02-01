@@ -93,8 +93,8 @@ export function daysBetween(from: PersianDate, to: PersianDate): number {
   return toAbsoluteDay(to) - toAbsoluteDay(from);
 }
 
-// محاسبه تاریخ کمیسیون بعدی (۶ ماه بعد، اواخر ماه)
-export function getNextCommissionDate(startDate: PersianDate): PersianDate {
+// محاسبه حداکثر تاریخ مجاز (۶ ماه بعد از تاریخ ثبت نسخه)
+export function getMaxPrescriptionDate(startDate: PersianDate): PersianDate {
   let { year, month, day } = startDate;
   
   // اضافه کردن ۶ ماه
@@ -104,10 +104,18 @@ export function getNextCommissionDate(startDate: PersianDate): PersianDate {
     year++;
   }
   
-  // انتخاب روز ۲۵ ماه (اواخر ماه)
-  day = 25;
+  // همان روز ۶ ماه بعد
+  const maxDaysInMonth = getDaysInMonth(month);
+  if (day > maxDaysInMonth) {
+    day = maxDaysInMonth;
+  }
   
   return { year, month, day };
+}
+
+// محاسبه تعداد روزهایی که یک واحد دارو کفایت می‌کند
+export function calculateDaysPerUnit(medication: MedicationInfo): number {
+  return Math.floor(medication.unitVolume / medication.dailyDose);
 }
 
 // واحدهای دارو
@@ -142,9 +150,11 @@ export function calculateDoseSchedule(
   medication: MedicationInfo,
   maxMedicationPerDose?: number // محدودیت تعداد دارو در هر نوبت
 ): DoseSchedule[] {
-  const MAX_DOSE_DAYS = 62; // حداکثر روز هر نوبت
-  const commissionDate = getNextCommissionDate(startDate);
-  const totalDays = daysBetween(startDate, commissionDate);
+  const maxDate = getMaxPrescriptionDate(startDate);
+  const totalDays = daysBetween(startDate, maxDate);
+  
+  // محاسبه تعداد روزهایی که هر واحد دارو کفایت می‌کند
+  const daysPerUnit = calculateDaysPerUnit(medication);
   
   const schedule: DoseSchedule[] = [];
   let currentDate = { ...startDate };
@@ -153,23 +163,32 @@ export function calculateDoseSchedule(
   let remainingDays = totalDays;
 
   while (remainingDays > 0) {
-    const isLast = remainingDays <= MAX_DOSE_DAYS;
-    let daysCount = isLast ? remainingDays : MAX_DOSE_DAYS;
+    // تعیین تعداد دارو برای این نوبت
+    let medicationAmount: number;
     
-    // محاسبه مقدار دارو - همیشه رو به پایین گرد می‌شود
-    let totalDoseNeeded = (medication.dailyDose * daysCount) / medication.unitVolume;
-    let medicationAmount = Math.floor(totalDoseNeeded);
-    medicationAmount = Math.max(1, medicationAmount); // حداقل یک واحد
-    
-    // اعمال محدودیت تعداد دارو
-    if (maxMedicationPerDose && medicationAmount > maxMedicationPerDose) {
+    if (maxMedicationPerDose) {
+      // اگر محدودیت داریم، از محدودیت استفاده کن
       medicationAmount = maxMedicationPerDose;
-      // محاسبه تعداد روزهای واقعی بر اساس محدودیت
-      daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
-      daysCount = Math.max(1, daysCount);
+    } else {
+      // بدون محدودیت: حداکثر ۶۲ روز
+      const maxDaysThisDose = Math.min(62, remainingDays);
+      medicationAmount = Math.floor((medication.dailyDose * maxDaysThisDose) / medication.unitVolume);
+      medicationAmount = Math.max(1, medicationAmount);
+    }
+    
+    // محاسبه تعداد روزهای واقعی بر اساس تعداد دارو
+    let daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+    daysCount = Math.max(1, daysCount);
+    
+    // اگر روزهای باقی‌مانده کمتر است، فقط به اندازه نیاز دارو بده
+    if (daysCount > remainingDays) {
+      daysCount = remainingDays;
+      medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
+      medicationAmount = Math.max(1, medicationAmount);
     }
     
     const endDate = addDays(currentDate, daysCount - 1);
+    const isLast = remainingDays <= daysCount;
     
     schedule.push({
       doseNumber,
@@ -178,7 +197,7 @@ export function calculateDoseSchedule(
       daysCount,
       medicationAmount,
       daysFromStart,
-      isFinal: isLast && remainingDays <= daysCount,
+      isFinal: isLast,
     });
     
     daysFromStart += daysCount;
@@ -187,7 +206,7 @@ export function calculateDoseSchedule(
     doseNumber++;
     
     // جلوگیری از حلقه بی‌نهایت
-    if (doseNumber > 20) break;
+    if (doseNumber > 50) break;
   }
   
   return schedule;
