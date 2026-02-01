@@ -139,7 +139,8 @@ export interface DoseSchedule {
 // محاسبه برنامه نوبت‌های دارو
 export function calculateDoseSchedule(
   startDate: PersianDate,
-  medication: MedicationInfo
+  medication: MedicationInfo,
+  maxMedicationPerDose?: number // محدودیت تعداد دارو در هر نوبت
 ): DoseSchedule[] {
   const MAX_DOSE_DAYS = 62; // حداکثر روز هر نوبت
   const commissionDate = getNextCommissionDate(startDate);
@@ -153,15 +154,20 @@ export function calculateDoseSchedule(
 
   while (remainingDays > 0) {
     const isLast = remainingDays <= MAX_DOSE_DAYS;
-    const daysCount = isLast ? remainingDays : MAX_DOSE_DAYS;
+    let daysCount = isLast ? remainingDays : MAX_DOSE_DAYS;
     
-    // محاسبه مقدار دارو
-    const totalDoseNeeded = (medication.dailyDose * daysCount) / medication.unitVolume;
+    // محاسبه مقدار دارو - همیشه رو به پایین گرد می‌شود
+    let totalDoseNeeded = (medication.dailyDose * daysCount) / medication.unitVolume;
+    let medicationAmount = Math.floor(totalDoseNeeded);
+    medicationAmount = Math.max(1, medicationAmount); // حداقل یک واحد
     
-    // گرد کردن: رو به بالا برای نوبت‌های عادی، رو به پایین برای نوبت آخر
-    const medicationAmount = isLast 
-      ? Math.floor(totalDoseNeeded) 
-      : Math.ceil(totalDoseNeeded);
+    // اعمال محدودیت تعداد دارو
+    if (maxMedicationPerDose && medicationAmount > maxMedicationPerDose) {
+      medicationAmount = maxMedicationPerDose;
+      // محاسبه تعداد روزهای واقعی بر اساس محدودیت
+      daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+      daysCount = Math.max(1, daysCount);
+    }
     
     const endDate = addDays(currentDate, daysCount - 1);
     
@@ -170,15 +176,18 @@ export function calculateDoseSchedule(
       startDate: { ...currentDate },
       endDate,
       daysCount,
-      medicationAmount: Math.max(1, medicationAmount), // حداقل یک واحد
+      medicationAmount,
       daysFromStart,
-      isFinal: isLast,
+      isFinal: isLast && remainingDays <= daysCount,
     });
     
     daysFromStart += daysCount;
     currentDate = addDays(currentDate, daysCount);
     remainingDays -= daysCount;
     doseNumber++;
+    
+    // جلوگیری از حلقه بی‌نهایت
+    if (doseNumber > 20) break;
   }
   
   return schedule;

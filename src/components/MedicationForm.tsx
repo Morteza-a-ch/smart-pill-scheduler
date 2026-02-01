@@ -17,7 +17,7 @@ import {
 import { Calendar, Pill, Calculator } from 'lucide-react';
 
 interface MedicationFormProps {
-  onSubmit: (date: PersianDate, medication: MedicationInfo) => void;
+  onSubmit: (date: PersianDate, medication: MedicationInfo, maxMedicationPerDose?: number) => void;
 }
 
 export function MedicationForm({ onSubmit }: MedicationFormProps) {
@@ -27,6 +27,7 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
   const [medicationType, setMedicationType] = useState<MedicationType>('syrup');
   const [unitVolume, setUnitVolume] = useState<string>('250');
   const [dailyDose, setDailyDose] = useState<string>('12');
+  const [maxMedication, setMaxMedication] = useState<string>('');
   const [error, setError] = useState<string>('');
 
   const years = generateYears(1400, 1410);
@@ -63,7 +64,13 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
       unitLabel: medicationTypes[medicationType].unitLabel,
     };
 
-    onSubmit(date, medication);
+    const maxMed = maxMedication ? parseInt(maxMedication) : undefined;
+    if (maxMedication && (isNaN(maxMed!) || maxMed! <= 0)) {
+      setError('محدودیت تعداد دارو باید عدد مثبت باشد');
+      return;
+    }
+
+    onSubmit(date, medication, maxMed);
   };
 
   const typeInfo = medicationTypes[medicationType];
@@ -193,6 +200,25 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
                 step="0.1"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="maxMedication">
+              حداکثر تعداد {typeInfo.unitLabel} در هر نوبت (اختیاری)
+            </Label>
+            <Input
+              id="maxMedication"
+              type="number"
+              value={maxMedication}
+              onChange={(e) => setMaxMedication(e.target.value)}
+              className="input-medical"
+              min="1"
+              step="1"
+              placeholder="بدون محدودیت"
+            />
+            <p className="text-xs text-muted-foreground">
+              اگر خالی باشد، محدودیتی اعمال نمی‌شود
+            </p>
           </div>
         </div>
       </div>

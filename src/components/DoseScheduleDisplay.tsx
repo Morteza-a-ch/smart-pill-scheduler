@@ -121,17 +121,10 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
                 مدت: <span className="font-medium text-foreground">{toPersianDigits(dose.daysCount)} روز</span>
               </span>
               
-              {dose.isFinal ? (
-                <span className="mr-auto flex items-center gap-1 text-secondary">
-                  <AlertCircle className="w-4 h-4" />
-                  گرد شده رو به پایین
-                </span>
-              ) : (
-                <span className="mr-auto flex items-center gap-1 text-primary">
-                  <CheckCircle2 className="w-4 h-4" />
-                  گرد شده رو به بالا
-                </span>
-              )}
+              <span className="mr-auto flex items-center gap-1 text-primary">
+                <CheckCircle2 className="w-4 h-4" />
+                گرد شده رو به پایین
+              </span>
             </div>
           </div>
         ))}
@@ -144,8 +137,7 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
           <div className="text-sm text-muted-foreground">
             <p className="font-medium text-foreground mb-1">نکات مهم:</p>
             <ul className="list-disc list-inside space-y-1">
-              <li>نوبت‌های عادی رو به بالا گرد شده‌اند تا بیمار دچار کمبود دارو نشود</li>
-              <li>نوبت آخر رو به پایین گرد شده تا داروی اضافی تجویز نشود</li>
+              <li>تمام نوبت‌ها رو به پایین گرد شده‌اند تا داروی اضافی تجویز نشود</li>
               <li>تاریخ کمیسیون بعدی: {formatPersianDateWithMonth(commissionDate)}</li>
             </ul>
           </div>
