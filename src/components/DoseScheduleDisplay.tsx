@@ -5,7 +5,8 @@ import {
   formatPersianDate,
   formatPersianDateWithMonth,
   toPersianDigits,
-  getNextCommissionDate
+  getMaxPrescriptionDate,
+  calculateDaysPerUnit
 } from '@/utils/persianCalendar';
 import { Calendar, Package, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -16,7 +17,8 @@ interface DoseScheduleDisplayProps {
 }
 
 export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseScheduleDisplayProps) {
-  const commissionDate = getNextCommissionDate(startDate);
+  const maxDate = getMaxPrescriptionDate(startDate);
+  const daysPerUnit = calculateDaysPerUnit(medication);
   
   const totalMedication = schedule.reduce((sum, dose) => sum + dose.medicationAmount, 0);
   const totalDays = schedule.reduce((sum, dose) => sum + dose.daysCount, 0);
@@ -32,7 +34,10 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
           <div>
             <h3 className="font-medium text-foreground">خلاصه برنامه تجویز</h3>
             <p className="text-sm text-muted-foreground">
-              از {formatPersianDateWithMonth(startDate)} تا کمیسیون {formatPersianDateWithMonth(commissionDate)}
+              از {formatPersianDateWithMonth(startDate)} تا حداکثر {formatPersianDateWithMonth(maxDate)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              هر {medication.unitLabel}: {toPersianDigits(daysPerUnit)} روز
             </p>
           </div>
         </div>
@@ -137,8 +142,9 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
           <div className="text-sm text-muted-foreground">
             <p className="font-medium text-foreground mb-1">نکات مهم:</p>
             <ul className="list-disc list-inside space-y-1">
+              <li>هر {medication.unitLabel} برای {toPersianDigits(daysPerUnit)} روز کفایت می‌کند</li>
               <li>تمام نوبت‌ها رو به پایین گرد شده‌اند تا داروی اضافی تجویز نشود</li>
-              <li>تاریخ کمیسیون بعدی: {formatPersianDateWithMonth(commissionDate)}</li>
+              <li>حداکثر تاریخ مجاز: {formatPersianDateWithMonth(maxDate)} (۶ ماه بعد از ثبت نسخه)</li>
             </ul>
           </div>
         </div>
