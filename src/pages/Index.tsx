@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MedicationForm } from '@/components/MedicationForm';
 import { DoseScheduleDisplay } from '@/components/DoseScheduleDisplay';
+import { DateCalculator } from '@/components/DateCalculator';
 import { 
   PersianDate, 
   MedicationInfo, 
@@ -15,8 +16,8 @@ const Index = () => {
   const [medication, setMedication] = useState<MedicationInfo | null>(null);
   const [startDate, setStartDate] = useState<PersianDate | null>(null);
 
-  const handleSubmit = (date: PersianDate, med: MedicationInfo) => {
-    const result = calculateDoseSchedule(date, med);
+  const handleSubmit = (date: PersianDate, med: MedicationInfo, maxMedicationPerDose?: number) => {
+    const result = calculateDoseSchedule(date, med, maxMedicationPerDose);
     setSchedule(result);
     setMedication(med);
     setStartDate(date);
@@ -82,6 +83,11 @@ const Index = () => {
             )}
           </div>
         )}
+
+        {/* ماشین‌حساب تاریخ */}
+        <div className="mt-8">
+          <DateCalculator />
+        </div>
       </main>
 
       {/* فوتر */}
