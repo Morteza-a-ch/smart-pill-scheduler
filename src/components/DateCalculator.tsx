@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -13,25 +13,28 @@ import {
   generateDays,
   persianMonths,
   toPersianDigits,
-  isValidPersianDate
+  isValidPersianDate,
+  getTodayPersianDate
 } from '@/utils/persianCalendar';
 import { Calendar, ArrowLeft, Calculator, RotateCcw } from 'lucide-react';
 
 export function DateCalculator() {
+  const today = useMemo(() => getTodayPersianDate(), []);
+  
   // حالت محاسبه تاریخ بعدی
-  const [startYear, setStartYear] = useState<number>(1403);
-  const [startMonth, setStartMonth] = useState<number>(1);
-  const [startDay, setStartDay] = useState<number>(1);
+  const [startYear, setStartYear] = useState<number>(today.year);
+  const [startMonth, setStartMonth] = useState<number>(today.month);
+  const [startDay, setStartDay] = useState<number>(today.day);
   const [daysToAdd, setDaysToAdd] = useState<string>('62');
   const [resultDate, setResultDate] = useState<PersianDate | null>(null);
 
   // حالت محاسبه معکوس
-  const [fromYear, setFromYear] = useState<number>(1403);
-  const [fromMonth, setFromMonth] = useState<number>(1);
-  const [fromDay, setFromDay] = useState<number>(1);
-  const [toYear, setToYear] = useState<number>(1403);
-  const [toMonth, setToMonth] = useState<number>(7);
-  const [toDay, setToDay] = useState<number>(1);
+  const [fromYear, setFromYear] = useState<number>(today.year);
+  const [fromMonth, setFromMonth] = useState<number>(today.month);
+  const [fromDay, setFromDay] = useState<number>(today.day);
+  const [toYear, setToYear] = useState<number>(today.year);
+  const [toMonth, setToMonth] = useState<number>(Math.min(today.month + 6, 12));
+  const [toDay, setToDay] = useState<number>(today.day);
   const [daysDiff, setDaysDiff] = useState<number | null>(null);
 
   const [error, setError] = useState<string>('');
@@ -196,7 +199,7 @@ export function DateCalculator() {
           </Button>
 
           {resultDate && (
-            <div className="p-4 rounded-xl bg-accent/10 text-center">
+            <div className="p-4 rounded-xl bg-accent/10 text-center" dir="rtl">
               <p className="text-sm text-muted-foreground mb-1">تاریخ محاسبه شده:</p>
               <p className="text-xl font-bold text-accent">
                 {formatPersianDateWithMonth(resultDate)}
