@@ -217,23 +217,22 @@ export function calculateDoseSchedule(
       // اگر محدودیت داریم، از محدودیت استفاده کن
       medicationAmount = maxMedicationPerDose;
     } else {
-      // بدون محدودیت: حداکثر ۶۲ روز
+      // بدون محدودیت: حداکثر تعداد دارویی که در ۶۲ روز مصرف می‌شود
+      // ولی حداقل ۳ واحد برای کاهش مراجعات
       const maxDaysThisDose = Math.min(62, remainingDays);
-      medicationAmount = Math.floor((medication.dailyDose * maxDaysThisDose) / medication.unitVolume);
-      medicationAmount = Math.max(1, medicationAmount);
+      const calculatedAmount = Math.floor((medication.dailyDose * maxDaysThisDose) / medication.unitVolume);
+      // حداقل ۳ واحد دارو (مگر اینکه روزهای باقی‌مانده کمتر باشه)
+      const minAmount = Math.min(3, Math.ceil((medication.dailyDose * remainingDays) / medication.unitVolume));
+      medicationAmount = Math.max(calculatedAmount, minAmount, 1);
     }
     
     // محاسبه تعداد روزهای واقعی بر اساس تعداد دارو
     let daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
     daysCount = Math.max(1, daysCount);
     
-    // بررسی اینکه آیا این نوبت آخر است
-    const isLast = remainingDays <= daysCount;
-    
-    // اگر نوبت آخر است، باید دارو قبل از پایان ماه ششم تمام شود
-    if (isLast) {
-      // نوبت آخر را طوری تنظیم کن که دارو قبل از آخرین روز ماه ششم تمام شود
-      // برای این کار، تعداد روزها را کمتر از روزهای باقیمانده می‌گذاریم
+    // اگر تعداد روزها بیشتر از باقی‌مانده شد، باید تنظیم کنیم
+    if (daysCount >= remainingDays) {
+      // نوبت آخر: دارو باید قبل از پایان ماه ششم تمام شود
       daysCount = remainingDays;
       medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
       medicationAmount = Math.max(1, medicationAmount);
@@ -241,12 +240,10 @@ export function calculateDoseSchedule(
       // محاسبه مجدد روزها بر اساس تعداد دارو (گرد به پایین)
       daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
       daysCount = Math.max(1, daysCount);
-    } else if (daysCount > remainingDays) {
-      // اگر روزهای باقی‌مانده کمتر است، فقط به اندازه نیاز دارو بده
-      daysCount = remainingDays;
-      medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
-      medicationAmount = Math.max(1, medicationAmount);
     }
+    
+    // بررسی اینکه آیا این نوبت آخر است
+    const isLast = daysCount >= remainingDays || remainingDays - daysCount < daysPerUnit;
     
     const endDate = addDays(currentDate, daysCount - 1);
     
