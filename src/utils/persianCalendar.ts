@@ -150,6 +150,8 @@ export function calculateDoseSchedule(
 ): DoseSchedule[] {
   const maxDate = getMaxPrescriptionDate(startDate);
   const totalDays = daysBetween(startDate, maxDate);
+  
+  // محاسبه تعداد روزهایی که هر واحد دارو کفایت می‌کند
   const daysPerUnit = calculateDaysPerUnit(medication);
   
   const schedule: DoseSchedule[] = [];
@@ -159,48 +161,32 @@ export function calculateDoseSchedule(
   let remainingDays = totalDays;
 
   while (remainingDays > 0) {
+    // تعیین تعداد دارو برای این نوبت
     let medicationAmount: number;
-    let daysCount: number;
     
-    // بررسی آیا این نوبت آخر است (روزهای باقی‌مانده کمتر از ۶۲ روز)
-    const isLastDose = remainingDays <= 62;
-    
-    if (isLastDose) {
-      // نوبت آخر: تمام روزهای باقی‌مانده را پوشش بده
-      // حتی اگر وارد ماه بعد شود مشکلی ندارد
-      daysCount = remainingDays;
-      medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
-      
-      // اگر فقط یک روز باعث شود یک شیشه اضافه شود، آن شیشه را نده
-      const daysForCurrentAmount = medicationAmount * daysPerUnit;
-      const daysForOneMore = (medicationAmount + 1) * daysPerUnit;
-      
-      // اگر تعداد روز واقعی فقط ۱ روز بیشتر از ظرفیت فعلی است ولی کمتر از ظرفیت بعدی
-      // یعنی فقط یک روز باعث نیاز به شیشه اضافی شده
-      if (daysCount > daysForCurrentAmount && daysCount < daysForOneMore) {
-        // فقط یک روز اختلاف، شیشه اضافی نده
-        daysCount = daysForCurrentAmount;
-      }
-      
-      medicationAmount = Math.max(1, medicationAmount);
+    if (maxMedicationPerDose) {
+      // اگر محدودیت داریم، از محدودیت استفاده کن
+      medicationAmount = maxMedicationPerDose;
     } else {
-      // نوبت‌های عادی
-      if (maxMedicationPerDose) {
-        medicationAmount = maxMedicationPerDose;
-        daysCount = medicationAmount * daysPerUnit;
-      } else {
-        // حداکثر ۶۲ روز
-        daysCount = 62;
-        medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
-        medicationAmount = Math.max(1, medicationAmount);
-        // محاسبه روزهای واقعی بر اساس تعداد شیشه
-        daysCount = medicationAmount * daysPerUnit;
-      }
+      // بدون محدودیت: حداکثر ۶۲ روز
+      const maxDaysThisDose = Math.min(62, remainingDays);
+      medicationAmount = Math.floor((medication.dailyDose * maxDaysThisDose) / medication.unitVolume);
+      medicationAmount = Math.max(1, medicationAmount);
     }
     
+    // محاسبه تعداد روزهای واقعی بر اساس تعداد دارو
+    let daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
     daysCount = Math.max(1, daysCount);
     
+    // اگر روزهای باقی‌مانده کمتر است، فقط به اندازه نیاز دارو بده
+    if (daysCount > remainingDays) {
+      daysCount = remainingDays;
+      medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
+      medicationAmount = Math.max(1, medicationAmount);
+    }
+    
     const endDate = addDays(currentDate, daysCount - 1);
+    const isLast = remainingDays <= daysCount;
     
     schedule.push({
       doseNumber,
@@ -209,7 +195,7 @@ export function calculateDoseSchedule(
       daysCount,
       medicationAmount,
       daysFromStart,
-      isFinal: isLastDose,
+      isFinal: isLast,
     });
     
     daysFromStart += daysCount;
@@ -217,6 +203,7 @@ export function calculateDoseSchedule(
     remainingDays -= daysCount;
     doseNumber++;
     
+    // جلوگیری از حلقه بی‌نهایت
     if (doseNumber > 50) break;
   }
   
