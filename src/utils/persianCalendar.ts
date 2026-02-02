@@ -93,24 +93,22 @@ export function daysBetween(from: PersianDate, to: PersianDate): number {
   return toAbsoluteDay(to) - toAbsoluteDay(from);
 }
 
-// محاسبه حداکثر تاریخ مجاز (۶ ماه بعد از تاریخ ثبت نسخه)
+// محاسبه حداکثر تاریخ مجاز (۶ ماه با احتساب ماه ثبت نسخه)
+// مثال: اگر نسخه در فروردین ثبت شده، تا آخر شهریور (ماه ۶) اعتبار دارد
 export function getMaxPrescriptionDate(startDate: PersianDate): PersianDate {
-  let { year, month, day } = startDate;
+  let { year, month } = startDate;
   
-  // اضافه کردن ۶ ماه
-  month += 6;
+  // ۶ ماه با احتساب ماه جاری یعنی ۵ ماه اضافه می‌کنیم
+  month += 5;
   if (month > 12) {
     month -= 12;
     year++;
   }
   
-  // همان روز ۶ ماه بعد
-  const maxDaysInMonth = getDaysInMonth(month);
-  if (day > maxDaysInMonth) {
-    day = maxDaysInMonth;
-  }
+  // آخرین روز ماه ششم
+  const lastDay = getDaysInMonth(month);
   
-  return { year, month, day };
+  return { year, month, day: lastDay };
 }
 
 // محاسبه تعداد روزهایی که یک واحد دارو کفایت می‌کند
