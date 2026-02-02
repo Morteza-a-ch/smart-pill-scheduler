@@ -116,6 +116,55 @@ export function calculateDaysPerUnit(medication: MedicationInfo): number {
   return Math.floor(medication.unitVolume / medication.dailyDose);
 }
 
+// دریافت تاریخ شمسی امروز
+export function getTodayPersianDate(): PersianDate {
+  const today = new Date();
+  
+  // تبدیل میلادی به شمسی با استفاده از فرمول
+  const gy = today.getFullYear();
+  const gm = today.getMonth() + 1;
+  const gd = today.getDate();
+  
+  const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+  let jy: number;
+  
+  if (gy > 1600) {
+    jy = 979;
+  } else {
+    jy = 0;
+  }
+  
+  const gy2 = (gy > 1600) ? gy - 1600 : gy - 621;
+  let days = (365 * gy2) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) - 80 + gd + g_d_m[gm - 1];
+  
+  if (gm > 2 && ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0))) {
+    days++;
+  }
+  
+  jy += 33 * Math.floor(days / 12053);
+  days %= 12053;
+  jy += 4 * Math.floor(days / 1461);
+  days %= 1461;
+  
+  if (days > 365) {
+    jy += Math.floor((days - 1) / 365);
+    days = (days - 1) % 365;
+  }
+  
+  let jm: number;
+  let jd: number;
+  
+  if (days < 186) {
+    jm = 1 + Math.floor(days / 31);
+    jd = 1 + (days % 31);
+  } else {
+    jm = 7 + Math.floor((days - 186) / 30);
+    jd = 1 + ((days - 186) % 30);
+  }
+  
+  return { year: jy, month: jm, day: jd };
+}
+
 // واحدهای دارو
 export type MedicationType = 'syrup' | 'ampoule' | 'tablet';
 
@@ -178,15 +227,28 @@ export function calculateDoseSchedule(
     let daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
     daysCount = Math.max(1, daysCount);
     
-    // اگر روزهای باقی‌مانده کمتر است، فقط به اندازه نیاز دارو بده
-    if (daysCount > remainingDays) {
+    // بررسی اینکه آیا این نوبت آخر است
+    const isLast = remainingDays <= daysCount;
+    
+    // اگر نوبت آخر است، باید دارو قبل از پایان ماه ششم تمام شود
+    if (isLast) {
+      // نوبت آخر را طوری تنظیم کن که دارو قبل از آخرین روز ماه ششم تمام شود
+      // برای این کار، تعداد روزها را کمتر از روزهای باقیمانده می‌گذاریم
+      daysCount = remainingDays;
+      medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
+      medicationAmount = Math.max(1, medicationAmount);
+      
+      // محاسبه مجدد روزها بر اساس تعداد دارو (گرد به پایین)
+      daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+      daysCount = Math.max(1, daysCount);
+    } else if (daysCount > remainingDays) {
+      // اگر روزهای باقی‌مانده کمتر است، فقط به اندازه نیاز دارو بده
       daysCount = remainingDays;
       medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
       medicationAmount = Math.max(1, medicationAmount);
     }
     
     const endDate = addDays(currentDate, daysCount - 1);
-    const isLast = remainingDays <= daysCount;
     
     schedule.push({
       doseNumber,

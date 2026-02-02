@@ -12,7 +12,8 @@ import {
   generateDays,
   persianMonths,
   toPersianDigits,
-  isValidPersianDate
+  isValidPersianDate,
+  getTodayPersianDate
 } from '@/utils/persianCalendar';
 import { Calendar, Pill, Calculator } from 'lucide-react';
 
@@ -21,9 +22,10 @@ interface MedicationFormProps {
 }
 
 export function MedicationForm({ onSubmit }: MedicationFormProps) {
-  const [year, setYear] = useState<number>(1403);
-  const [month, setMonth] = useState<number>(1);
-  const [day, setDay] = useState<number>(1);
+  const today = getTodayPersianDate();
+  const [year, setYear] = useState<number>(today.year);
+  const [month, setMonth] = useState<number>(today.month);
+  const [day, setDay] = useState<number>(today.day);
   const [medicationType, setMedicationType] = useState<MedicationType>('syrup');
   const [unitVolume, setUnitVolume] = useState<string>('250');
   const [dailyDose, setDailyDose] = useState<string>('12');
