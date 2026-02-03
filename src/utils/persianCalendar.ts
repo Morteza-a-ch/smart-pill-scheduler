@@ -209,30 +209,19 @@ export function calculateDoseSchedule(
   let doseNumber = 1;
   let remainingDays = totalDays;
 
+  // ثابت‌های محدودیت روز
+  const MIN_DAYS_PER_DOSE = 50;
+  const MAX_DAYS_PER_DOSE = 62;
+
   while (remainingDays > 0) {
-    // تعیین تعداد دارو برای این نوبت
+    // بررسی اینکه آیا روزهای باقی‌مانده کمتر از حداقل است (نوبت آخر)
+    const isLastDose = remainingDays <= MAX_DAYS_PER_DOSE;
+    
     let medicationAmount: number;
+    let daysCount: number;
     
-    if (maxMedicationPerDose) {
-      // اگر محدودیت داریم، از محدودیت استفاده کن
-      medicationAmount = maxMedicationPerDose;
-    } else {
-      // بدون محدودیت: حداکثر تعداد دارویی که در ۶۲ روز مصرف می‌شود
-      // ولی حداقل ۳ واحد برای کاهش مراجعات
-      const maxDaysThisDose = Math.min(62, remainingDays);
-      const calculatedAmount = Math.floor((medication.dailyDose * maxDaysThisDose) / medication.unitVolume);
-      // حداقل ۳ واحد دارو (مگر اینکه روزهای باقی‌مانده کمتر باشه)
-      const minAmount = Math.min(3, Math.ceil((medication.dailyDose * remainingDays) / medication.unitVolume));
-      medicationAmount = Math.max(calculatedAmount, minAmount, 1);
-    }
-    
-    // محاسبه تعداد روزهای واقعی بر اساس تعداد دارو
-    let daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
-    daysCount = Math.max(1, daysCount);
-    
-    // اگر تعداد روزها بیشتر از باقی‌مانده شد، باید تنظیم کنیم
-    if (daysCount >= remainingDays) {
-      // نوبت آخر: دارو باید قبل از پایان ماه ششم تمام شود
+    if (isLastDose) {
+      // نوبت آخر: تمام روزهای باقی‌مانده
       daysCount = remainingDays;
       medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
       medicationAmount = Math.max(1, medicationAmount);
@@ -240,10 +229,39 @@ export function calculateDoseSchedule(
       // محاسبه مجدد روزها بر اساس تعداد دارو (گرد به پایین)
       daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
       daysCount = Math.max(1, daysCount);
+    } else {
+      // نوبت‌های عادی: بین ۵۰ تا ۶۲ روز
+      if (maxMedicationPerDose) {
+        // اگر محدودیت داریم، از محدودیت استفاده کن
+        medicationAmount = maxMedicationPerDose;
+        daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+      } else {
+        // بدون محدودیت: حداکثر ۶۲ روز
+        daysCount = MAX_DAYS_PER_DOSE;
+        medicationAmount = Math.ceil((medication.dailyDose * daysCount) / medication.unitVolume);
+      }
+      
+      // محاسبه تعداد روزهای واقعی بر اساس تعداد دارو
+      daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+      
+      // اطمینان از محدوده ۵۰-۶۲ روز
+      if (daysCount < MIN_DAYS_PER_DOSE) {
+        // اگر کمتر از ۵۰ روز شد، تعداد دارو را افزایش بده
+        medicationAmount = Math.ceil((medication.dailyDose * MIN_DAYS_PER_DOSE) / medication.unitVolume);
+        daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+      }
+      
+      if (daysCount > MAX_DAYS_PER_DOSE) {
+        daysCount = MAX_DAYS_PER_DOSE;
+        medicationAmount = Math.ceil((medication.dailyDose * daysCount) / medication.unitVolume);
+        daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+      }
+      
+      daysCount = Math.max(1, daysCount);
     }
     
-    // بررسی اینکه آیا این نوبت آخر است
-    const isLast = daysCount >= remainingDays || remainingDays - daysCount < daysPerUnit;
+    // بررسی نهایی نوبت آخر
+    const isLast = isLastDose || remainingDays - daysCount < MIN_DAYS_PER_DOSE;
     
     const endDate = addDays(currentDate, daysCount - 1);
     
