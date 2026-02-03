@@ -126,9 +126,9 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
                 مدت: <span className="font-medium text-foreground">{toPersianDigits(dose.daysCount)} روز</span>
               </span>
               
-              <span className="mr-auto flex items-center gap-1 text-primary">
+              <span className={`mr-auto flex items-center gap-1 ${dose.isFinal ? 'text-secondary' : 'text-primary'}`}>
                 <CheckCircle2 className="w-4 h-4" />
-                گرد شده رو به پایین
+                {dose.isFinal ? 'گرد شده رو به پایین' : 'گرد شده رو به بالا'}
               </span>
             </div>
           </div>
@@ -143,7 +143,8 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
             <p className="font-medium text-foreground mb-1">نکات مهم:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>هر {medication.unitLabel} برای {toPersianDigits(daysPerUnit)} روز کفایت می‌کند</li>
-              <li>تمام نوبت‌ها رو به پایین گرد شده‌اند تا داروی اضافی تجویز نشود</li>
+              <li>نوبت‌های عادی رو به بالا گرد شده‌اند تا بیمار کمبود دارو نداشته باشد</li>
+              <li>نوبت آخر رو به پایین گرد شده تا از انباشت دارو جلوگیری شود</li>
               <li>حداکثر تاریخ مجاز: {formatPersianDateWithMonth(maxDate)} (۶ ماه بعد از ثبت نسخه)</li>
             </ul>
           </div>

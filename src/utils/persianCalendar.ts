@@ -225,6 +225,8 @@ export function calculateDoseSchedule(
     
     if (isLastDose) {
       // نوبت آخر: تمام روزهای باقی‌مانده در یک نوبت
+      // نوبت آخر محدودیت ۵۰-۶۲ روز ندارد و می‌تواند کمتر باشد
+      // مقدار دارو رو به پایین گرد می‌شود تا از انباشت جلوگیری شود
       daysCount = remainingDays;
       medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
       medicationAmount = Math.max(1, medicationAmount);
@@ -248,28 +250,28 @@ export function calculateDoseSchedule(
       // خروج از حلقه - نوبت آخر فقط یکی است
       break;
     } else {
-      // نوبت‌های عادی: بین ۵۰ تا ۶۲ روز
+      // نوبت‌های عادی (نوبت ۱ و ۲): بین ۵۰ تا ۶۲ روز
+      // مقدار دارو رو به بالا گرد می‌شود تا بیمار کمبود نداشته باشد
       if (maxMedicationPerDose) {
         // اگر محدودیت داریم، از محدودیت استفاده کن
         medicationAmount = maxMedicationPerDose;
-        daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
       } else {
-        // بدون محدودیت: حداکثر ۶۲ روز
-        daysCount = MAX_DAYS_PER_DOSE;
-        medicationAmount = Math.ceil((medication.dailyDose * daysCount) / medication.unitVolume);
+        // بدون محدودیت: محاسبه برای حداکثر ۶۲ روز با گرد رو به بالا
+        medicationAmount = Math.ceil((medication.dailyDose * MAX_DAYS_PER_DOSE) / medication.unitVolume);
       }
       
-      // محاسبه تعداد روزهای واقعی بر اساس تعداد دارو
+      // محاسبه تعداد روزهای واقعی بر اساس تعداد دارو (گرد به پایین برای روزها)
       daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
       
-      // اطمینان از محدوده ۵۰-۶۲ روز
+      // اطمینان از محدوده ۵۰-۶۲ روز برای نوبت‌های عادی
       if (daysCount < MIN_DAYS_PER_DOSE) {
-        // اگر کمتر از ۵۰ روز شد، تعداد دارو را افزایش بده
+        // اگر کمتر از ۵۰ روز شد، تعداد دارو را افزایش بده (گرد رو به بالا)
         medicationAmount = Math.ceil((medication.dailyDose * MIN_DAYS_PER_DOSE) / medication.unitVolume);
         daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
       }
       
       if (daysCount > MAX_DAYS_PER_DOSE) {
+        // محدود کردن به ۶۲ روز
         daysCount = MAX_DAYS_PER_DOSE;
         medicationAmount = Math.ceil((medication.dailyDose * daysCount) / medication.unitVolume);
         daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
