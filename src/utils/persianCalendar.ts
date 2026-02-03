@@ -214,14 +214,17 @@ export function calculateDoseSchedule(
   const MAX_DAYS_PER_DOSE = 62;
 
   while (remainingDays > 0) {
-    // بررسی اینکه آیا روزهای باقی‌مانده کمتر از حداقل است (نوبت آخر)
-    const isLastDose = remainingDays <= MAX_DAYS_PER_DOSE;
+    // بررسی اینکه آیا این باید نوبت آخر باشد
+    // نوبت آخر: وقتی روزهای باقی‌مانده کمتر یا مساوی ۶۲ روز است
+    // یا وقتی بعد از این نوبت، کمتر از ۵۰ روز می‌ماند
+    const wouldRemainAfterNormal = remainingDays - MAX_DAYS_PER_DOSE;
+    const isLastDose = remainingDays <= MAX_DAYS_PER_DOSE || wouldRemainAfterNormal < MIN_DAYS_PER_DOSE;
     
     let medicationAmount: number;
     let daysCount: number;
     
     if (isLastDose) {
-      // نوبت آخر: تمام روزهای باقی‌مانده
+      // نوبت آخر: تمام روزهای باقی‌مانده در یک نوبت
       daysCount = remainingDays;
       medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
       medicationAmount = Math.max(1, medicationAmount);
@@ -229,6 +232,21 @@ export function calculateDoseSchedule(
       // محاسبه مجدد روزها بر اساس تعداد دارو (گرد به پایین)
       daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
       daysCount = Math.max(1, daysCount);
+      
+      const endDate = addDays(currentDate, daysCount - 1);
+      
+      schedule.push({
+        doseNumber,
+        startDate: { ...currentDate },
+        endDate,
+        daysCount,
+        medicationAmount,
+        daysFromStart,
+        isFinal: true,
+      });
+      
+      // خروج از حلقه - نوبت آخر فقط یکی است
+      break;
     } else {
       // نوبت‌های عادی: بین ۵۰ تا ۶۲ روز
       if (maxMedicationPerDose) {
@@ -260,9 +278,6 @@ export function calculateDoseSchedule(
       daysCount = Math.max(1, daysCount);
     }
     
-    // بررسی نهایی نوبت آخر
-    const isLast = isLastDose || remainingDays - daysCount < MIN_DAYS_PER_DOSE;
-    
     const endDate = addDays(currentDate, daysCount - 1);
     
     schedule.push({
@@ -272,7 +287,7 @@ export function calculateDoseSchedule(
       daysCount,
       medicationAmount,
       daysFromStart,
-      isFinal: isLast,
+      isFinal: false,
     });
     
     daysFromStart += daysCount;
