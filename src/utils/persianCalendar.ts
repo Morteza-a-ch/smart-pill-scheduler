@@ -212,6 +212,10 @@ export function calculateDoseSchedule(
   // ثابت‌های محدودیت روز
   const MIN_DAYS_PER_DOSE = 50;
   const MAX_DAYS_PER_DOSE = 62;
+  
+  // محاسبه مقدار دارو برای نوبت‌های عادی (برای استفاده به عنوان سقف نوبت آخر)
+  const normalDoseMedicationAmount = maxMedicationPerDose || 
+    Math.ceil((medication.dailyDose * MIN_DAYS_PER_DOSE) / medication.unitVolume);
 
   while (remainingDays > 0) {
     // بررسی اینکه آیا این باید نوبت آخر باشد
@@ -225,11 +229,14 @@ export function calculateDoseSchedule(
     
     if (isLastDose) {
       // نوبت آخر: تمام روزهای باقی‌مانده در یک نوبت
-      // نوبت آخر محدودیت ۵۰-۶۲ روز ندارد و می‌تواند کمتر باشد
       // مقدار دارو رو به پایین گرد می‌شود تا از انباشت جلوگیری شود
+      // و نباید بیشتر از نوبت‌های عادی باشد
       daysCount = remainingDays;
       medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
       medicationAmount = Math.max(1, medicationAmount);
+      
+      // اطمینان از اینکه مقدار دارو نوبت آخر ≤ نوبت‌های عادی
+      medicationAmount = Math.min(medicationAmount, normalDoseMedicationAmount);
       
       // محاسبه مجدد روزها بر اساس تعداد دارو (گرد به پایین)
       daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
