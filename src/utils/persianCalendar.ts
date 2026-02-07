@@ -251,13 +251,14 @@ export function calculateDoseSchedule(
       break;
     } else {
       // نوبت‌های عادی (نوبت ۱ و ۲): بین ۵۰ تا ۶۲ روز
-      // مقدار دارو رو به بالا گرد می‌شود تا بیمار کمبود نداشته باشد
+      // منطق: حداقل تعداد شیشه که حداقل ۵۰ روز را پوشش دهد
+      // سپس تعداد روز واقعی بر اساس آن محاسبه می‌شود
       if (maxMedicationPerDose) {
         // اگر محدودیت داریم، از محدودیت استفاده کن
         medicationAmount = maxMedicationPerDose;
       } else {
-        // بدون محدودیت: محاسبه برای حداکثر ۶۲ روز با گرد رو به بالا
-        medicationAmount = Math.ceil((medication.dailyDose * MAX_DAYS_PER_DOSE) / medication.unitVolume);
+        // حداقل شیشه برای پوشش ۵۰ روز (گرد رو به بالا)
+        medicationAmount = Math.ceil((medication.dailyDose * MIN_DAYS_PER_DOSE) / medication.unitVolume);
       }
       
       // محاسبه تعداد روزهای واقعی بر اساس تعداد دارو (گرد به پایین برای روزها)
