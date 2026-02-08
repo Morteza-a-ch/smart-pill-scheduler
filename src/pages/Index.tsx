@@ -16,8 +16,8 @@ const Index = () => {
   const [medication, setMedication] = useState<MedicationInfo | null>(null);
   const [startDate, setStartDate] = useState<PersianDate | null>(null);
 
-  const handleSubmit = (date: PersianDate, med: MedicationInfo, maxMedicationPerDose?: number) => {
-    const result = calculateDoseSchedule(date, med, maxMedicationPerDose);
+  const handleSubmit = (date: PersianDate, med: MedicationInfo, maxMedicationPerDose?: number, singleDoseMode?: boolean) => {
+    const result = calculateDoseSchedule(date, med, maxMedicationPerDose, singleDoseMode);
     setSchedule(result);
     setMedication(med);
     setStartDate(date);

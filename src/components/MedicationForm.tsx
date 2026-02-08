@@ -18,7 +18,7 @@ import {
 import { Calendar, Pill, Calculator } from 'lucide-react';
 
 interface MedicationFormProps {
-  onSubmit: (date: PersianDate, medication: MedicationInfo, maxMedicationPerDose?: number) => void;
+  onSubmit: (date: PersianDate, medication: MedicationInfo, maxMedicationPerDose?: number, singleDoseMode?: boolean) => void;
 }
 
 export function MedicationForm({ onSubmit }: MedicationFormProps) {
@@ -30,6 +30,7 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
   const [unitVolume, setUnitVolume] = useState<string>('250');
   const [dailyDose, setDailyDose] = useState<string>('12');
   const [maxMedication, setMaxMedication] = useState<string>('');
+  const [singleDoseMode, setSingleDoseMode] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
   const years = generateYears(1400, 1410);
@@ -72,7 +73,7 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
       return;
     }
 
-    onSubmit(date, medication, maxMed);
+    onSubmit(date, medication, maxMed, singleDoseMode);
   };
 
   const typeInfo = medicationTypes[medicationType];
@@ -221,6 +222,24 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
             <p className="text-xs text-muted-foreground">
               اگر خالی باشد، محدودیتی اعمال نمی‌شود
             </p>
+          </div>
+
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 border border-border">
+            <input
+              type="checkbox"
+              id="singleDoseMode"
+              checked={singleDoseMode}
+              onChange={(e) => setSingleDoseMode(e.target.checked)}
+              className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
+            />
+            <div>
+              <Label htmlFor="singleDoseMode" className="cursor-pointer font-medium">
+                حالت تک‌نوبتی (رسیدن به کمیسیون)
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                فقط یک نوبت تجویز می‌شود تا بیمار به تاریخ کمیسیون برسد
+              </p>
+            </div>
           </div>
         </div>
       </div>
