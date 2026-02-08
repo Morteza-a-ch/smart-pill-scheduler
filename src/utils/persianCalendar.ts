@@ -195,7 +195,8 @@ export interface DoseSchedule {
 export function calculateDoseSchedule(
   startDate: PersianDate,
   medication: MedicationInfo,
-  maxMedicationPerDose?: number // محدودیت تعداد دارو در هر نوبت
+  maxMedicationPerDose?: number, // محدودیت تعداد دارو در هر نوبت
+  singleDoseMode?: boolean // حالت تک‌نوبتی برای رسیدن به کمیسیون
 ): DoseSchedule[] {
   const maxDate = getMaxPrescriptionDate(startDate);
   const totalDays = daysBetween(startDate, maxDate);
@@ -216,6 +217,32 @@ export function calculateDoseSchedule(
   // محاسبه مقدار دارو برای نوبت‌های عادی (برای استفاده به عنوان سقف نوبت آخر)
   const normalDoseMedicationAmount = maxMedicationPerDose || 
     Math.ceil((medication.dailyDose * MIN_DAYS_PER_DOSE) / medication.unitVolume);
+
+  // حالت تک‌نوبتی: فقط یک نوبت تا رسیدن به کمیسیون
+  if (singleDoseMode) {
+    // محاسبه مقدار دارو برای تمام روزهای باقی‌مانده (رو به پایین)
+    let medicationAmount = Math.floor((medication.dailyDose * totalDays) / medication.unitVolume);
+    medicationAmount = Math.max(1, medicationAmount);
+    
+    // محدود کردن به سقف نوبت‌های عادی
+    medicationAmount = Math.min(medicationAmount, normalDoseMedicationAmount);
+    
+    // محاسبه روزها بر اساس تعداد دارو
+    const daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+    const endDate = addDays(startDate, daysCount - 1);
+    
+    schedule.push({
+      doseNumber: 1,
+      startDate: { ...startDate },
+      endDate,
+      daysCount,
+      medicationAmount,
+      daysFromStart: 0,
+      isFinal: true,
+    });
+    
+    return schedule;
+  }
 
   while (remainingDays > 0) {
     // بررسی اینکه آیا این باید نوبت آخر باشد
