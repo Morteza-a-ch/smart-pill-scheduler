@@ -218,10 +218,17 @@ export function calculateDoseSchedule(
   const normalDoseMedicationAmount = maxMedicationPerDose || 
     Math.ceil((medication.dailyDose * MIN_DAYS_PER_DOSE) / medication.unitVolume);
 
-  // حالت تک‌نوبتی: فقط یک نوبت تا رسیدن به کمیسیون
+  // حالت تک‌نوبتی: فقط یک نوبت تا رسیدن به اول ماه بعد + چند روز
   if (singleDoseMode) {
-    // محاسبه مقدار دارو برای تمام روزهای باقی‌مانده (رو به پایین)
-    let medicationAmount = Math.floor((medication.dailyDose * totalDays) / medication.unitVolume);
+    // محاسبه روزهای باقی‌مانده تا اول ماه بعد
+    let { year, month, day } = startDate;
+    const daysLeftInMonth = getDaysInMonth(month) - day + 1;
+    
+    // تا اول ماه بعد + ۵ روز اضافی برای اطمینان
+    const targetDays = daysLeftInMonth + 5;
+    
+    // محاسبه مقدار دارو (رو به پایین)
+    let medicationAmount = Math.floor((medication.dailyDose * targetDays) / medication.unitVolume);
     medicationAmount = Math.max(1, medicationAmount);
     
     // محدود کردن به سقف نوبت‌های عادی
