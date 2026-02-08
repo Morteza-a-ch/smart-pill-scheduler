@@ -253,18 +253,15 @@ export function calculateDoseSchedule(
 
   while (remainingDays > 0) {
     // بررسی اینکه آیا این باید نوبت آخر باشد
-    // نوبت آخر: وقتی روزهای باقی‌مانده کمتر یا مساوی ۶۲ روز است
-    // یا وقتی بعد از این نوبت، کمتر از ۵۰ روز می‌ماند
-    const wouldRemainAfterNormal = remainingDays - MAX_DAYS_PER_DOSE;
-    const isLastDose = remainingDays <= MAX_DAYS_PER_DOSE || wouldRemainAfterNormal < MIN_DAYS_PER_DOSE;
+    // نوبت آخر: فقط وقتی روزهای باقی‌مانده کمتر یا مساوی ۶۲ روز است
+    const isLastDose = remainingDays <= MAX_DAYS_PER_DOSE;
     
     let medicationAmount: number;
     let daysCount: number;
     
     if (isLastDose) {
-      // نوبت آخر: تمام روزهای باقی‌مانده در یک نوبت
-      // مقدار دارو رو به پایین گرد می‌شود تا از انباشت جلوگیری شود
-      // و نباید بیشتر از نوبت‌های عادی باشد
+      // نوبت آخر: روزهای باقی‌مانده با گرد به پایین برای مقدار دارو
+      // مقدار دارو نباید بیشتر از نوبت‌های عادی باشد
       daysCount = remainingDays;
       medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
       medicationAmount = Math.max(1, medicationAmount);
