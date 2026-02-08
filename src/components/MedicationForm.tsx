@@ -15,7 +15,7 @@ import {
   isValidPersianDate,
   getTodayPersianDate
 } from '@/utils/persianCalendar';
-import { Calendar, Pill, Calculator } from 'lucide-react';
+import { Calendar, Pill, Calculator, TrendingDown } from 'lucide-react';
 
 interface MedicationFormProps {
   onSubmit: (date: PersianDate, medication: MedicationInfo, maxMedicationPerDose?: number, singleDoseMode?: boolean) => void;
@@ -31,6 +31,8 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
   const [dailyDose, setDailyDose] = useState<string>('12');
   const [maxMedication, setMaxMedication] = useState<string>('');
   const [singleDoseMode, setSingleDoseMode] = useState<boolean>(false);
+  const [reductionPercent, setReductionPercent] = useState<string>('');
+  const [reductionIntervalMonths, setReductionIntervalMonths] = useState<string>('2');
   const [error, setError] = useState<string>('');
 
   const years = generateYears(1400, 1410);
@@ -60,11 +62,16 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
       return;
     }
 
+    const reductionPct = reductionPercent ? parseFloat(reductionPercent) : undefined;
+    const reductionInterval = reductionIntervalMonths ? parseInt(reductionIntervalMonths) : undefined;
+
     const medication: MedicationInfo = {
       type: medicationType,
       unitVolume: volume,
       dailyDose: dose,
       unitLabel: medicationTypes[medicationType].unitLabel,
+      reductionPercent: reductionPct,
+      reductionIntervalMonths: reductionInterval,
     };
 
     const maxMed = maxMedication ? parseInt(maxMedication) : undefined;
@@ -243,6 +250,55 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
           </div>
         </div>
       </div>
+
+      {/* بخش کاهش تدریجی دارو */}
+      {medicationType === 'ampoule' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 text-accent">
+            <TrendingDown className="w-5 h-5" />
+            <h3 className="text-lg font-medium">کاهش تدریجی دارو</h3>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="reductionPercent">
+                درصد کاهش در هر بازه
+              </Label>
+              <Input
+                id="reductionPercent"
+                type="number"
+                value={reductionPercent}
+                onChange={(e) => setReductionPercent(e.target.value)}
+                className="input-medical"
+                min="0"
+                max="50"
+                step="1"
+                placeholder="مثلاً ۱۰"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reductionIntervalMonths">
+                بازه کاهش (ماه)
+              </Label>
+              <Input
+                id="reductionIntervalMonths"
+                type="number"
+                value={reductionIntervalMonths}
+                onChange={(e) => setReductionIntervalMonths(e.target.value)}
+                className="input-medical"
+                min="1"
+                max="6"
+                step="1"
+                placeholder="۲"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            در صورت نیاز به کاهش تدریجی دوز، درصد کاهش و بازه زمانی را مشخص کنید
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm">

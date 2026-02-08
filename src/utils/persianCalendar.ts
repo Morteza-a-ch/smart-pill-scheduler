@@ -173,12 +173,14 @@ export interface MedicationInfo {
   unitVolume: number; // حجم هر واحد (مثلاً ۲۵۰ سی‌سی)
   dailyDose: number; // مصرف روزانه (مثلاً ۱۲ سی‌سی)
   unitLabel: string; // برچسب واحد (شیشه، آمپول، بسته)
+  reductionPercent?: number; // درصد کاهش در هر بازه
+  reductionIntervalMonths?: number; // بازه کاهش (ماه)
 }
 
-export const medicationTypes: Record<MedicationType, { label: string; unitLabel: string; defaultVolume: number }> = {
+export const medicationTypes: Record<MedicationType, { label: string; unitLabel: string; defaultVolume: number; tabletsPerBlister?: number }> = {
   syrup: { label: 'شربت', unitLabel: 'شیشه', defaultVolume: 250 },
   ampoule: { label: 'آمپول', unitLabel: 'آمپول', defaultVolume: 1 },
-  tablet: { label: 'قرص', unitLabel: 'بسته', defaultVolume: 30 },
+  tablet: { label: 'قرص', unitLabel: 'بلیستر', defaultVolume: 10, tabletsPerBlister: 10 },
 };
 
 export interface DoseSchedule {
@@ -187,6 +189,8 @@ export interface DoseSchedule {
   endDate: PersianDate;
   daysCount: number;
   medicationAmount: number;
+  medicationVolume: number; // حجم کل دارو (سی‌سی یا تعداد قرص)
+  dailyDoseForPeriod: number; // دوز روزانه این دوره (ممکن است کاهش یافته باشد)
   daysFromStart: number;
   isFinal: boolean;
 }
@@ -214,6 +218,21 @@ export function calculateDoseSchedule(
   const MIN_DAYS_PER_DOSE = 50;
   const MAX_DAYS_PER_DOSE = 62;
   
+  // پارامترهای کاهش دارو
+  const reductionPercent = medication.reductionPercent || 0;
+  const reductionIntervalMonths = medication.reductionIntervalMonths || 2;
+  const reductionIntervalDays = reductionIntervalMonths * 30; // تقریبی
+  
+  // محاسبه دوز روزانه با کاهش بر اساس زمان گذشته
+  const getDailyDoseForPeriod = (daysFromStartOfPrescription: number): number => {
+    if (reductionPercent <= 0) return medication.dailyDose;
+    
+    // تعداد بازه‌های کاهش که گذشته
+    const reductionPeriods = Math.floor(daysFromStartOfPrescription / reductionIntervalDays);
+    const reductionFactor = Math.pow(1 - reductionPercent / 100, reductionPeriods);
+    return medication.dailyDose * reductionFactor;
+  };
+  
   // محاسبه مقدار دارو برای نوبت‌های عادی (برای استفاده به عنوان سقف نوبت آخر)
   const normalDoseMedicationAmount = maxMedicationPerDose || 
     Math.ceil((medication.dailyDose * MIN_DAYS_PER_DOSE) / medication.unitVolume);
@@ -226,16 +245,18 @@ export function calculateDoseSchedule(
     
     // تا اول ماه بعد + ۵ روز اضافی برای اطمینان
     const targetDays = daysLeftInMonth + 5;
+    const currentDailyDose = getDailyDoseForPeriod(0);
     
     // محاسبه مقدار دارو (رو به پایین)
-    let medicationAmount = Math.floor((medication.dailyDose * targetDays) / medication.unitVolume);
+    let medicationAmount = Math.floor((currentDailyDose * targetDays) / medication.unitVolume);
     medicationAmount = Math.max(1, medicationAmount);
     
     // محدود کردن به سقف نوبت‌های عادی
     medicationAmount = Math.min(medicationAmount, normalDoseMedicationAmount);
     
     // محاسبه روزها بر اساس تعداد دارو
-    const daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+    const daysCount = Math.floor((medicationAmount * medication.unitVolume) / currentDailyDose);
+    const medicationVolume = medicationAmount * medication.unitVolume;
     const endDate = addDays(startDate, daysCount - 1);
     
     schedule.push({
@@ -244,6 +265,8 @@ export function calculateDoseSchedule(
       endDate,
       daysCount,
       medicationAmount,
+      medicationVolume,
+      dailyDoseForPeriod: currentDailyDose,
       daysFromStart: 0,
       isFinal: true,
     });
@@ -252,6 +275,9 @@ export function calculateDoseSchedule(
   }
 
   while (remainingDays > 0) {
+    // محاسبه دوز روزانه فعلی با احتساب کاهش
+    const currentDailyDose = getDailyDoseForPeriod(daysFromStart);
+    
     // بررسی اینکه آیا این باید نوبت آخر باشد
     // نوبت آخر: فقط وقتی روزهای باقی‌مانده کمتر یا مساوی ۶۲ روز است
     const isLastDose = remainingDays <= MAX_DAYS_PER_DOSE;
@@ -263,17 +289,18 @@ export function calculateDoseSchedule(
       // نوبت آخر: روزهای باقی‌مانده با گرد به پایین برای مقدار دارو
       // مقدار دارو نباید بیشتر از نوبت‌های عادی باشد
       daysCount = remainingDays;
-      medicationAmount = Math.floor((medication.dailyDose * daysCount) / medication.unitVolume);
+      medicationAmount = Math.floor((currentDailyDose * daysCount) / medication.unitVolume);
       medicationAmount = Math.max(1, medicationAmount);
       
       // اطمینان از اینکه مقدار دارو نوبت آخر ≤ نوبت‌های عادی
       medicationAmount = Math.min(medicationAmount, normalDoseMedicationAmount);
       
       // محاسبه مجدد روزها بر اساس تعداد دارو (گرد به پایین)
-      daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+      daysCount = Math.floor((medicationAmount * medication.unitVolume) / currentDailyDose);
       daysCount = Math.max(1, daysCount);
       
       const endDate = addDays(currentDate, daysCount - 1);
+      const medicationVolume = medicationAmount * medication.unitVolume;
       
       schedule.push({
         doseNumber,
@@ -281,6 +308,8 @@ export function calculateDoseSchedule(
         endDate,
         daysCount,
         medicationAmount,
+        medicationVolume,
+        dailyDoseForPeriod: currentDailyDose,
         daysFromStart,
         isFinal: true,
       });
@@ -296,30 +325,31 @@ export function calculateDoseSchedule(
         medicationAmount = maxMedicationPerDose;
       } else {
         // حداقل شیشه برای پوشش ۵۰ روز (گرد رو به بالا)
-        medicationAmount = Math.ceil((medication.dailyDose * MIN_DAYS_PER_DOSE) / medication.unitVolume);
+        medicationAmount = Math.ceil((currentDailyDose * MIN_DAYS_PER_DOSE) / medication.unitVolume);
       }
       
       // محاسبه تعداد روزهای واقعی بر اساس تعداد دارو (گرد به پایین برای روزها)
-      daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+      daysCount = Math.floor((medicationAmount * medication.unitVolume) / currentDailyDose);
       
       // اطمینان از محدوده ۵۰-۶۲ روز برای نوبت‌های عادی
       if (daysCount < MIN_DAYS_PER_DOSE) {
         // اگر کمتر از ۵۰ روز شد، تعداد دارو را افزایش بده (گرد رو به بالا)
-        medicationAmount = Math.ceil((medication.dailyDose * MIN_DAYS_PER_DOSE) / medication.unitVolume);
-        daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+        medicationAmount = Math.ceil((currentDailyDose * MIN_DAYS_PER_DOSE) / medication.unitVolume);
+        daysCount = Math.floor((medicationAmount * medication.unitVolume) / currentDailyDose);
       }
       
       if (daysCount > MAX_DAYS_PER_DOSE) {
         // محدود کردن به ۶۲ روز
         daysCount = MAX_DAYS_PER_DOSE;
-        medicationAmount = Math.ceil((medication.dailyDose * daysCount) / medication.unitVolume);
-        daysCount = Math.floor((medicationAmount * medication.unitVolume) / medication.dailyDose);
+        medicationAmount = Math.ceil((currentDailyDose * daysCount) / medication.unitVolume);
+        daysCount = Math.floor((medicationAmount * medication.unitVolume) / currentDailyDose);
       }
       
       daysCount = Math.max(1, daysCount);
     }
     
     const endDate = addDays(currentDate, daysCount - 1);
+    const medicationVolume = medicationAmount * medication.unitVolume;
     
     schedule.push({
       doseNumber,
@@ -327,6 +357,8 @@ export function calculateDoseSchedule(
       endDate,
       daysCount,
       medicationAmount,
+      medicationVolume,
+      dailyDoseForPeriod: currentDailyDose,
       daysFromStart,
       isFinal: false,
     });

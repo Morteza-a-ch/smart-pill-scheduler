@@ -8,7 +8,8 @@ import {
   getMaxPrescriptionDate,
   calculateDaysPerUnit
 } from '@/utils/persianCalendar';
-import { Calendar, Package, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calendar, Package, Clock, AlertCircle, CheckCircle2, Printer, TrendingDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface DoseScheduleDisplayProps {
   schedule: DoseSchedule[];
@@ -21,7 +22,54 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
   const daysPerUnit = calculateDaysPerUnit(medication);
   
   const totalMedication = schedule.reduce((sum, dose) => sum + dose.medicationAmount, 0);
+  const totalVolume = schedule.reduce((sum, dose) => sum + dose.medicationVolume, 0);
   const totalDays = schedule.reduce((sum, dose) => sum + dose.daysCount, 0);
+  const hasReduction = medication.reductionPercent && medication.reductionPercent > 0;
+
+  // تابع چاپ نوبت
+  const handlePrintDose = (dose: DoseSchedule) => {
+    const printContent = `
+      <html dir="rtl">
+        <head>
+          <title>نوبت ${dose.doseNumber}</title>
+          <style>
+            body { font-family: Vazirmatn, Tahoma, sans-serif; padding: 20px; }
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+            .info { margin: 10px 0; }
+            .label { font-weight: bold; }
+            .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h2>برگه تجویز دارو - نوبت ${toPersianDigits(dose.doseNumber)}</h2>
+          </div>
+          <div class="info"><span class="label">نوع دارو:</span> ${medication.unitLabel}</div>
+          <div class="info"><span class="label">تعداد:</span> ${toPersianDigits(dose.medicationAmount)} ${medication.unitLabel}</div>
+          <div class="info"><span class="label">مقدار کل:</span> ${toPersianDigits(dose.medicationVolume)} ${medication.type === 'syrup' ? 'سی‌سی' : medication.type === 'tablet' ? 'قرص' : 'عدد'}</div>
+          <div class="info"><span class="label">مصرف روزانه:</span> ${toPersianDigits(Number(dose.dailyDoseForPeriod.toFixed(2)))} ${medication.type === 'syrup' ? 'سی‌سی' : 'عدد'}</div>
+          <div class="info"><span class="label">از تاریخ:</span> ${formatPersianDate(dose.startDate)}</div>
+          <div class="info"><span class="label">تا تاریخ:</span> ${formatPersianDate(dose.endDate)}</div>
+          <div class="info"><span class="label">مدت:</span> ${toPersianDigits(dose.daysCount)} روز</div>
+          ${dose.isFinal ? '<div class="info" style="color: green;"><strong>نوبت آخر</strong></div>' : ''}
+          <div class="footer">سامانه تجویز دارو</div>
+        </body>
+      </html>
+    `;
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
+  // تابع تعیین واحد مقدار
+  const getVolumeUnit = () => {
+    if (medication.type === 'syrup') return 'سی‌سی';
+    if (medication.type === 'tablet') return 'قرص';
+    return 'عدد';
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -38,11 +86,16 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               هر {medication.unitLabel}: {toPersianDigits(daysPerUnit)} روز
+              {hasReduction && (
+                <span className="mr-2 text-accent">
+                  • کاهش {toPersianDigits(medication.reductionPercent!)}٪ هر {toPersianDigits(medication.reductionIntervalMonths!)} ماه
+                </span>
+              )}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-4 gap-4 text-center">
           <div className="p-4 rounded-xl bg-card">
             <div className="text-2xl font-bold text-primary">{toPersianDigits(schedule.length)}</div>
             <div className="text-sm text-muted-foreground">تعداد نوبت</div>
@@ -52,7 +105,11 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
             <div className="text-sm text-muted-foreground">کل {medication.unitLabel}</div>
           </div>
           <div className="p-4 rounded-xl bg-card">
-            <div className="text-2xl font-bold text-accent">{toPersianDigits(totalDays)}</div>
+            <div className="text-2xl font-bold text-accent">{toPersianDigits(totalVolume)}</div>
+            <div className="text-sm text-muted-foreground">{getVolumeUnit()}</div>
+          </div>
+          <div className="p-4 rounded-xl bg-card">
+            <div className="text-2xl font-bold text-muted-foreground">{toPersianDigits(totalDays)}</div>
             <div className="text-sm text-muted-foreground">روز</div>
           </div>
         </div>
@@ -95,17 +152,51 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
                 </div>
               </div>
 
-              <div className={`px-4 py-2 rounded-xl text-center ${
-                dose.isFinal 
-                  ? 'bg-secondary/10' 
-                  : 'bg-primary/10'
-              }`}>
-                <div className={`text-2xl font-bold ${
-                  dose.isFinal ? 'text-secondary' : 'text-primary'
+              <div className="flex items-center gap-3">
+                <div className={`px-4 py-2 rounded-xl text-center ${
+                  dose.isFinal 
+                    ? 'bg-secondary/10' 
+                    : 'bg-primary/10'
                 }`}>
-                  {toPersianDigits(dose.medicationAmount)}
+                  <div className={`text-2xl font-bold ${
+                    dose.isFinal ? 'text-secondary' : 'text-primary'
+                  }`}>
+                    {toPersianDigits(dose.medicationAmount)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{medication.unitLabel}</div>
                 </div>
-                <div className="text-xs text-muted-foreground">{medication.unitLabel}</div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePrintDose(dose)}
+                  className="gap-1"
+                >
+                  <Printer className="w-4 h-4" />
+                  چاپ
+                </Button>
+              </div>
+            </div>
+
+            {/* نمایش مقدار دارو */}
+            <div className="grid grid-cols-2 gap-4 text-sm mb-3 p-3 rounded-lg bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Package className="w-4 h-4 text-primary" />
+                <span className="text-muted-foreground">مقدار کل:</span>
+                <span className="font-medium text-foreground">
+                  {toPersianDigits(dose.medicationVolume)} {getVolumeUnit()}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {hasReduction && dose.dailyDoseForPeriod < medication.dailyDose ? (
+                  <TrendingDown className="w-4 h-4 text-accent" />
+                ) : (
+                  <Clock className="w-4 h-4 text-secondary" />
+                )}
+                <span className="text-muted-foreground">مصرف روزانه:</span>
+                <span className="font-medium text-foreground">
+                  {toPersianDigits(Number(dose.dailyDoseForPeriod.toFixed(2)))} {getVolumeUnit()}
+                </span>
               </div>
             </div>
 
@@ -146,6 +237,9 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
               <li>نوبت‌های عادی رو به بالا گرد شده‌اند تا بیمار کمبود دارو نداشته باشد</li>
               <li>نوبت آخر رو به پایین گرد شده تا از انباشت دارو جلوگیری شود</li>
               <li>حداکثر تاریخ مجاز: {formatPersianDateWithMonth(maxDate)} (۶ ماه بعد از ثبت نسخه)</li>
+              {hasReduction && (
+                <li>دوز روزانه هر {toPersianDigits(medication.reductionIntervalMonths!)} ماه {toPersianDigits(medication.reductionPercent!)}٪ کاهش می‌یابد</li>
+              )}
             </ul>
           </div>
         </div>
