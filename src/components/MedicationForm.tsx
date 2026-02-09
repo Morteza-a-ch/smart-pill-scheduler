@@ -33,6 +33,7 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
   const [singleDoseMode, setSingleDoseMode] = useState<boolean>(false);
   const [reductionPercent, setReductionPercent] = useState<string>('');
   const [reductionIntervalMonths, setReductionIntervalMonths] = useState<string>('2');
+  const [dispensingInterval, setDispensingInterval] = useState<string>('7');
   const [error, setError] = useState<string>('');
 
   const years = generateYears(1400, 1410);
@@ -65,6 +66,8 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
     const reductionPct = reductionPercent ? parseFloat(reductionPercent) : undefined;
     const reductionInterval = reductionIntervalMonths ? parseInt(reductionIntervalMonths) : undefined;
 
+    const dispInterval = medicationType === 'ampoule' && dispensingInterval ? parseInt(dispensingInterval) : undefined;
+
     const medication: MedicationInfo = {
       type: medicationType,
       unitVolume: volume,
@@ -72,6 +75,7 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
       unitLabel: medicationTypes[medicationType].unitLabel,
       reductionPercent: reductionPct,
       reductionIntervalMonths: reductionInterval,
+      dispensingIntervalDays: dispInterval,
     };
 
     const maxMed = maxMedication ? parseInt(maxMedication) : undefined;
@@ -251,12 +255,32 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
         </div>
       </div>
 
-      {/* بخش کاهش تدریجی دارو */}
+      {/* بخش تنظیمات آمپول */}
       {medicationType === 'ampoule' && (
         <div className="space-y-4">
           <div className="flex items-center gap-3 text-accent">
             <TrendingDown className="w-5 h-5" />
-            <h3 className="text-lg font-medium">کاهش تدریجی دارو</h3>
+            <h3 className="text-lg font-medium">تنظیمات آمپول</h3>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="dispensingInterval">
+              بازه تحویل دارو (روز)
+            </Label>
+            <Input
+              id="dispensingInterval"
+              type="number"
+              value={dispensingInterval}
+              onChange={(e) => setDispensingInterval(e.target.value)}
+              className="input-medical"
+              min="1"
+              max="30"
+              step="1"
+              placeholder="مثلاً ۷"
+            />
+            <p className="text-xs text-muted-foreground">
+              بیمار هر چند روز یکبار برای دریافت دارو مراجعه می‌کند
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -295,7 +319,7 @@ export function MedicationForm({ onSubmit }: MedicationFormProps) {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            در صورت نیاز به کاهش تدریجی دوز، درصد کاهش و بازه زمانی را مشخص کنید
+            کاهش تدریجی نسبت به دوز اولیه ثبت شده اعمال می‌شود
           </p>
         </div>
       )}
