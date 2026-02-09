@@ -19,12 +19,13 @@ interface DoseScheduleDisplayProps {
 
 export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseScheduleDisplayProps) {
   const maxDate = getMaxPrescriptionDate(startDate);
-  const daysPerUnit = calculateDaysPerUnit(medication);
+  const daysPerUnit = medication.type === 'ampoule' ? 0 : calculateDaysPerUnit(medication);
   
   const totalMedication = schedule.reduce((sum, dose) => sum + dose.medicationAmount, 0);
   const totalVolume = schedule.reduce((sum, dose) => sum + dose.medicationVolume, 0);
   const totalDays = schedule.reduce((sum, dose) => sum + dose.daysCount, 0);
   const hasReduction = medication.reductionPercent && medication.reductionPercent > 0;
+  const isAmpouleWithInterval = medication.type === 'ampoule' && medication.dispensingIntervalDays;
 
   // تابع چاپ نوبت
   const handlePrintDose = (dose: DoseSchedule) => {
@@ -85,11 +86,24 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
               از {formatPersianDateWithMonth(startDate)} تا حداکثر {formatPersianDateWithMonth(maxDate)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              هر {medication.unitLabel}: {toPersianDigits(daysPerUnit)} روز
-              {hasReduction && (
-                <span className="mr-2 text-accent">
-                  • کاهش {toPersianDigits(medication.reductionPercent!)}٪ هر {toPersianDigits(medication.reductionIntervalMonths!)} ماه
-                </span>
+              {isAmpouleWithInterval ? (
+                <>
+                  تحویل هر {toPersianDigits(medication.dispensingIntervalDays!)} روز
+                  {hasReduction && (
+                    <span className="mr-2 text-accent">
+                      • کاهش {toPersianDigits(medication.reductionPercent!)}٪ هر {toPersianDigits(medication.reductionIntervalMonths!)} ماه
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  هر {medication.unitLabel}: {toPersianDigits(daysPerUnit)} روز
+                  {hasReduction && (
+                    <span className="mr-2 text-accent">
+                      • کاهش {toPersianDigits(medication.reductionPercent!)}٪ هر {toPersianDigits(medication.reductionIntervalMonths!)} ماه
+                    </span>
+                  )}
+                </>
               )}
             </p>
           </div>
@@ -233,7 +247,8 @@ export function DoseScheduleDisplay({ schedule, medication, startDate }: DoseSch
           <div className="text-sm text-muted-foreground">
             <p className="font-medium text-foreground mb-1">نکات مهم:</p>
             <ul className="list-disc list-inside space-y-1">
-              <li>هر {medication.unitLabel} برای {toPersianDigits(daysPerUnit)} روز کفایت می‌کند</li>
+              {!isAmpouleWithInterval && <li>هر {medication.unitLabel} برای {toPersianDigits(daysPerUnit)} روز کفایت می‌کند</li>}
+              {isAmpouleWithInterval && <li>بیمار هر {toPersianDigits(medication.dispensingIntervalDays!)} روز برای دریافت دارو مراجعه می‌کند</li>}
               <li>نوبت‌های عادی رو به بالا گرد شده‌اند تا بیمار کمبود دارو نداشته باشد</li>
               <li>نوبت آخر رو به پایین گرد شده تا از انباشت دارو جلوگیری شود</li>
               <li>حداکثر تاریخ مجاز: {formatPersianDateWithMonth(maxDate)} (۶ ماه بعد از ثبت نسخه)</li>
