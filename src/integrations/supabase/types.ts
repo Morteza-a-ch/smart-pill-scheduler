@@ -14,16 +14,423 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      case_appeals: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          message: string
+          patient_id: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          message: string
+          patient_id: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_appeals_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "commission_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_documents: {
+        Row: {
+          case_id: string
+          created_at: string
+          file_path: string
+          id: string
+          patient_id: string
+          title: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          file_path: string
+          id?: string
+          patient_id: string
+          title: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          file_path?: string
+          id?: string
+          patient_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_documents_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "commission_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_cases: {
+        Row: {
+          case_number: number
+          created_at: string
+          disease_name: string | null
+          doctor_prescription_url: string | null
+          documents_finalized: boolean
+          fee_amount: number
+          id: string
+          insurance_name: string | null
+          needs_doctor_prescription: boolean
+          paid: boolean
+          patient_id: string
+          status: Database["public"]["Enums"]["case_status"]
+          updated_at: string
+        }
+        Insert: {
+          case_number?: number
+          created_at?: string
+          disease_name?: string | null
+          doctor_prescription_url?: string | null
+          documents_finalized?: boolean
+          fee_amount?: number
+          id?: string
+          insurance_name?: string | null
+          needs_doctor_prescription?: boolean
+          paid?: boolean
+          patient_id: string
+          status?: Database["public"]["Enums"]["case_status"]
+          updated_at?: string
+        }
+        Update: {
+          case_number?: number
+          created_at?: string
+          disease_name?: string | null
+          doctor_prescription_url?: string | null
+          documents_finalized?: boolean
+          fee_amount?: number
+          id?: string
+          insurance_name?: string | null
+          needs_doctor_prescription?: boolean
+          paid?: boolean
+          patient_id?: string
+          status?: Database["public"]["Enums"]["case_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      commission_votes: {
+        Row: {
+          approved: boolean
+          case_id: string
+          created_at: string
+          daily_dose: number | null
+          id: string
+          medication_form: Database["public"]["Enums"]["med_form"] | null
+          medication_name: string | null
+          member_id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved: boolean
+          case_id: string
+          created_at?: string
+          daily_dose?: number | null
+          id?: string
+          medication_form?: Database["public"]["Enums"]["med_form"] | null
+          medication_name?: string | null
+          member_id: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved?: boolean
+          case_id?: string
+          created_at?: string
+          daily_dose?: number | null
+          id?: string
+          medication_form?: Database["public"]["Enums"]["med_form"] | null
+          medication_name?: string | null
+          member_id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_votes_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "commission_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guardians: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          full_name: string
+          id: string
+          national_id: string | null
+          patient_id: string
+          phone: string | null
+          province: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          full_name: string
+          id?: string
+          national_id?: string | null
+          patient_id: string
+          phone?: string | null
+          province?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          national_id?: string | null
+          patient_id?: string
+          phone?: string | null
+          province?: string | null
+        }
+        Relationships: []
+      }
+      prescriptions: {
+        Row: {
+          case_id: string | null
+          created_at: string
+          daily_dose: number
+          disease_name: string
+          dispensing_interval_days: number | null
+          doctor_id: string
+          id: string
+          issue_date_jalali: string | null
+          medication_form: Database["public"]["Enums"]["med_form"]
+          medication_name: string
+          patient_id: string
+          reduction_interval_months: number | null
+          reduction_percent: number | null
+          signature_note: string | null
+          unit_volume: number | null
+          updated_at: string
+        }
+        Insert: {
+          case_id?: string | null
+          created_at?: string
+          daily_dose: number
+          disease_name: string
+          dispensing_interval_days?: number | null
+          doctor_id: string
+          id?: string
+          issue_date_jalali?: string | null
+          medication_form: Database["public"]["Enums"]["med_form"]
+          medication_name: string
+          patient_id: string
+          reduction_interval_months?: number | null
+          reduction_percent?: number | null
+          signature_note?: string | null
+          unit_volume?: number | null
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string | null
+          created_at?: string
+          daily_dose?: number
+          disease_name?: string
+          dispensing_interval_days?: number | null
+          doctor_id?: string
+          id?: string
+          issue_date_jalali?: string | null
+          medication_form?: Database["public"]["Enums"]["med_form"]
+          medication_name?: string
+          patient_id?: string
+          reduction_interval_months?: number | null
+          reduction_percent?: number | null
+          signature_note?: string | null
+          unit_volume?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescriptions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "commission_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          birth_cert_no: string | null
+          birth_date: string | null
+          card_number: string | null
+          city: string | null
+          commission_title: string | null
+          created_at: string
+          father_name: string | null
+          first_name: string
+          id: string
+          insurance_name: string | null
+          issued_from: string | null
+          last_name: string
+          medical_code: string | null
+          national_id: string | null
+          phone: string | null
+          province: string | null
+          sheba: string | null
+          specialty: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          birth_cert_no?: string | null
+          birth_date?: string | null
+          card_number?: string | null
+          city?: string | null
+          commission_title?: string | null
+          created_at?: string
+          father_name?: string | null
+          first_name?: string
+          id: string
+          insurance_name?: string | null
+          issued_from?: string | null
+          last_name?: string
+          medical_code?: string | null
+          national_id?: string | null
+          phone?: string | null
+          province?: string | null
+          sheba?: string | null
+          specialty?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          birth_cert_no?: string | null
+          birth_date?: string | null
+          card_number?: string | null
+          city?: string | null
+          commission_title?: string | null
+          created_at?: string
+          father_name?: string | null
+          first_name?: string
+          id?: string
+          insurance_name?: string | null
+          issued_from?: string | null
+          last_name?: string
+          medical_code?: string | null
+          national_id?: string | null
+          phone?: string | null
+          province?: string | null
+          sheba?: string | null
+          specialty?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          card_number: string | null
+          created_at: string
+          description: string | null
+          id: string
+          sheba: string | null
+          status: Database["public"]["Enums"]["wallet_tx_status"]
+          type: Database["public"]["Enums"]["wallet_tx_type"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          card_number?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          sheba?: string | null
+          status?: Database["public"]["Enums"]["wallet_tx_status"]
+          type: Database["public"]["Enums"]["wallet_tx_type"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          card_number?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          sheba?: string | null
+          status?: Database["public"]["Enums"]["wallet_tx_status"]
+          type?: Database["public"]["Enums"]["wallet_tx_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "doctor" | "commission" | "patient" | "admin"
+      case_status:
+        | "unreviewed"
+        | "reviewing"
+        | "approved"
+        | "rejected"
+        | "reappeal"
+      med_form: "syrup" | "tablet" | "ampoule" | "suppository"
+      wallet_tx_status: "pending" | "done" | "failed"
+      wallet_tx_type: "deposit" | "withdraw"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +557,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["doctor", "commission", "patient", "admin"],
+      case_status: [
+        "unreviewed",
+        "reviewing",
+        "approved",
+        "rejected",
+        "reappeal",
+      ],
+      med_form: ["syrup", "tablet", "ampoule", "suppository"],
+      wallet_tx_status: ["pending", "done", "failed"],
+      wallet_tx_type: ["deposit", "withdraw"],
+    },
   },
 } as const
