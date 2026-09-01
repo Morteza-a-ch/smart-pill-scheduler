@@ -61,7 +61,7 @@ export default function Profile() {
     });
     payload.first_name = form.first_name || '';
     payload.last_name = form.last_name || '';
-    const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
+    const { error } = await supabase.from('profiles').update(payload as never).eq('id', user.id);
     setBusy(false);
     if (error) return toast.error('ذخیره نشد: ' + error.message);
     await refresh();
