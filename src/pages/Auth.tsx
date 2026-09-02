@@ -108,17 +108,10 @@ export default function Auth() {
                   <Input id="ln" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>نوع کاربری</Label>
-                <Select value={role} onValueChange={(v: AppRole) => setRole(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="patient">{roleLabels.patient}</SelectItem>
-                    <SelectItem value="doctor">{roleLabels.doctor}</SelectItem>
-                    <SelectItem value="commission">{roleLabels.commission}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <p className="text-xs text-muted-foreground bg-muted rounded-lg p-3">
+                همه حساب‌های جدید با نقش «بیمار» ایجاد می‌شوند. ارتقای نقش به پزشک، عضو کمیسیون یا مدیر فقط توسط مدیر سامانه انجام می‌شود.
+              </p>
+
               <div className="space-y-2">
                 <Label htmlFor="email2">ایمیل</Label>
                 <Input id="email2" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required dir="ltr" />
