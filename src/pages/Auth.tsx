@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
-import { useAuth, AppRole, roleLabels } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Stethoscope, LogIn, UserPlus } from 'lucide-react';
@@ -20,7 +19,6 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [role, setRole] = useState<AppRole>('patient');
 
   useEffect(() => {
     if (!loading && user) navigate('/dashboard', { replace: true });
@@ -43,7 +41,7 @@ export default function Auth() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { first_name: firstName, last_name: lastName, role },
+        data: { first_name: firstName, last_name: lastName },
       },
     });
     setBusy(false);
