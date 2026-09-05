@@ -19,13 +19,17 @@ interface CaseRow {
   documents_finalized: boolean;
   paid: boolean;
   fee_amount: number;
+  doctor_prescription_url: string | null;
 }
 interface Doc { id: string; title: string; file_path: string }
+interface Vote { id: string; approved: boolean; medication_name: string | null; daily_dose: number | null; notes: string | null }
+
 
 export default function MyCase() {
   const { user } = useAuth();
   const [row, setRow] = useState<CaseRow | null>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
+  const [votes, setVotes] = useState<Vote[]>([]);
   const [disease, setDisease] = useState('');
   const [insurance, setInsurance] = useState('');
   const [appeal, setAppeal] = useState('');
@@ -38,10 +42,15 @@ export default function MyCase() {
       .order('created_at', { ascending: false }).limit(1).maybeSingle();
     setRow((data as CaseRow) ?? null);
     if (data) {
-      const { data: d } = await supabase.from('case_documents').select('id,title,file_path').eq('case_id', data.id);
+      const [{ data: d }, { data: v }] = await Promise.all([
+        supabase.from('case_documents').select('id,title,file_path').eq('case_id', data.id),
+        supabase.from('commission_votes').select('id,approved,medication_name,daily_dose,notes').eq('case_id', data.id),
+      ]);
       setDocs((d as Doc[]) ?? []);
+      setVotes((v as Vote[]) ?? []);
     }
   }, [user]);
+
 
   useEffect(() => { load(); }, [load]);
 
@@ -75,6 +84,23 @@ export default function MyCase() {
     }
     setBusy(false);
   };
+
+  const uploadRx = async (file: File) => {
+    if (!user || !row) return;
+    setBusy(true);
+    try {
+      const path = await uploadPrivateFile('medical-docs', user.id, file);
+      await supabase.from('commission_cases')
+        .update({ doctor_prescription_url: path, needs_doctor_prescription: true })
+        .eq('id', row.id);
+      toast.success('نسخه پزشک بارگذاری شد');
+      load();
+    } catch {
+      toast.error('بارگذاری ناموفق بود');
+    }
+    setBusy(false);
+  };
+
 
   const openDoc = async (path: string) => {
     const url = await getSignedUrl('medical-docs', path);
@@ -176,6 +202,36 @@ export default function MyCase() {
           </div>
         )}
       </div>
+
+      <div className="bg-card rounded-2xl shadow-card p-6 space-y-3">
+        <h3 className="font-bold">نسخه پزشک</h3>
+        {row.doctor_prescription_url ? (
+          <button onClick={() => openDoc(row.doctor_prescription_url!)} className="flex items-center gap-2 text-sm text-primary">
+            <FileText className="w-4 h-4" /> مشاهده نسخه بارگذاری‌شده
+          </button>
+        ) : (
+          <p className="text-sm text-muted-foreground">نسخه‌ای بارگذاری نشده است.</p>
+        )}
+        <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-muted cursor-pointer text-sm w-fit">
+          <Upload className="w-4 h-4" /> بارگذاری نسخه پزشک
+          <input type="file" className="hidden" onChange={(e) => e.target.files?.[0] && uploadRx(e.target.files[0])} />
+        </label>
+      </div>
+
+      <div className="bg-card rounded-2xl shadow-card p-6 space-y-3">
+        <h3 className="font-bold">نتیجه کمیسیون</h3>
+        {votes.length ? votes.map((v) => (
+          <div key={v.id} className="border border-border rounded-xl p-4 text-sm space-y-1">
+            <p className={v.approved ? 'text-emerald-600 font-bold' : 'text-destructive font-bold'}>
+              {v.approved ? 'موافقت شد' : 'مخالفت شد'}
+            </p>
+            {v.medication_name && <p><span className="text-muted-foreground">دارو: </span>{v.medication_name}</p>}
+            {v.daily_dose != null && <p><span className="text-muted-foreground">دوز روزانه: </span>{v.daily_dose}</p>}
+            {v.notes && <p className="text-muted-foreground">{v.notes}</p>}
+          </div>
+        )) : <p className="text-sm text-muted-foreground">هنوز رأیی ثبت نشده است.</p>}
+      </div>
+
 
       {(row.status === 'rejected' || row.status === 'reappeal') && (
         <div className="bg-card rounded-2xl shadow-card p-6 space-y-3">
