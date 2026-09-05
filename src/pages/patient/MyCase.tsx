@@ -29,6 +29,7 @@ export default function MyCase() {
   const { user } = useAuth();
   const [row, setRow] = useState<CaseRow | null>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
+  const [votes, setVotes] = useState<Vote[]>([]);
   const [disease, setDisease] = useState('');
   const [insurance, setInsurance] = useState('');
   const [appeal, setAppeal] = useState('');
@@ -41,10 +42,15 @@ export default function MyCase() {
       .order('created_at', { ascending: false }).limit(1).maybeSingle();
     setRow((data as CaseRow) ?? null);
     if (data) {
-      const { data: d } = await supabase.from('case_documents').select('id,title,file_path').eq('case_id', data.id);
+      const [{ data: d }, { data: v }] = await Promise.all([
+        supabase.from('case_documents').select('id,title,file_path').eq('case_id', data.id),
+        supabase.from('commission_votes').select('id,approved,medication_name,daily_dose,notes').eq('case_id', data.id),
+      ]);
       setDocs((d as Doc[]) ?? []);
+      setVotes((v as Vote[]) ?? []);
     }
   }, [user]);
+
 
   useEffect(() => { load(); }, [load]);
 
