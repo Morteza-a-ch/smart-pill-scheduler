@@ -85,6 +85,23 @@ export default function MyCase() {
     setBusy(false);
   };
 
+  const uploadRx = async (file: File) => {
+    if (!user || !row) return;
+    setBusy(true);
+    try {
+      const path = await uploadPrivateFile('medical-docs', user.id, file);
+      await supabase.from('commission_cases')
+        .update({ doctor_prescription_url: path, needs_doctor_prescription: true })
+        .eq('id', row.id);
+      toast.success('نسخه پزشک بارگذاری شد');
+      load();
+    } catch {
+      toast.error('بارگذاری ناموفق بود');
+    }
+    setBusy(false);
+  };
+
+
   const openDoc = async (path: string) => {
     const url = await getSignedUrl('medical-docs', path);
     if (url) window.open(url, '_blank');
