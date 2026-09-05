@@ -19,8 +19,11 @@ interface CaseRow {
   documents_finalized: boolean;
   paid: boolean;
   fee_amount: number;
+  doctor_prescription_url: string | null;
 }
 interface Doc { id: string; title: string; file_path: string }
+interface Vote { id: string; approved: boolean; medication_name: string | null; daily_dose: number | null; notes: string | null }
+
 
 export default function MyCase() {
   const { user } = useAuth();
