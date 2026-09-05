@@ -39,20 +39,42 @@ export default function Users() {
     load();
   };
 
-  const shown = rows.filter((r) => `${r.first_name} ${r.last_name}`.includes(q.trim()));
+  const [filter, setFilter] = useState<AppRole | 'all'>('all');
+
+  const shown = rows.filter((r) => {
+    const nameOk = `${r.first_name} ${r.last_name}`.includes(q.trim());
+    const roleOk = filter === 'all' ? true : (roles[r.id] ?? []).includes(filter);
+    return nameOk && roleOk;
+  });
 
   return (
     <div className="bg-card rounded-2xl shadow-card p-6 space-y-4">
-      <h2 className="text-xl font-bold">مدیریت کاربران</h2>
+      <h2 className="text-xl font-bold">مدیریت کاربران و نقش‌ها</h2>
       <Input placeholder="جستجوی نام" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="flex flex-wrap gap-2">
+        {(['all', ...(Object.keys(roleLabels) as AppRole[])] as (AppRole | 'all')[]).map((k) => (
+          <button
+            key={k}
+            onClick={() => setFilter(k)}
+            className={`px-3 py-1.5 rounded-lg border text-xs ${filter === k ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground'}`}
+          >
+            {k === 'all' ? `همه (${rows.length})` : `${roleLabels[k]} (${rows.filter((r) => (roles[r.id] ?? []).includes(k)).length})`}
+          </button>
+        ))}
+      </div>
       <div className="space-y-3">
         {shown.map((r) => (
           <div key={r.id} className="border border-border rounded-xl p-4 grid sm:grid-cols-[1fr_auto_auto] gap-3 items-center text-sm">
-            <div>
+            <div className="space-y-1">
               <p className="font-bold">{`${r.first_name} ${r.last_name}`.trim() || 'بدون نام'}</p>
-              <p className="text-muted-foreground">
-                {r.phone || '—'} · نقش فعلی: {(roles[r.id] ?? []).map((x) => roleLabels[x]).join('، ') || 'ندارد'}
-              </p>
+              <p className="text-muted-foreground">{r.phone || '—'}{r.specialty ? ` · ${r.specialty}` : ''}</p>
+              <div className="flex flex-wrap gap-1">
+                {(roles[r.id] ?? []).length
+                  ? (roles[r.id] ?? []).map((x) => (
+                      <span key={x} className="px-2 py-0.5 rounded-md bg-muted text-xs">{roleLabels[x]}</span>
+                    ))
+                  : <span className="px-2 py-0.5 rounded-md bg-muted text-xs text-muted-foreground">بدون نقش</span>}
+              </div>
             </div>
             <Select value={pick[r.id] ?? ''} onValueChange={(v) => setPick((s) => ({ ...s, [r.id]: v as AppRole }))}>
               <SelectTrigger className="w-40"><SelectValue placeholder="انتخاب نقش" /></SelectTrigger>
@@ -70,3 +92,4 @@ export default function Users() {
     </div>
   );
 }
+
