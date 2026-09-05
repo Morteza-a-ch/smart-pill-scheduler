@@ -203,6 +203,36 @@ export default function MyCase() {
         )}
       </div>
 
+      <div className="bg-card rounded-2xl shadow-card p-6 space-y-3">
+        <h3 className="font-bold">نسخه پزشک</h3>
+        {row.doctor_prescription_url ? (
+          <button onClick={() => openDoc(row.doctor_prescription_url!)} className="flex items-center gap-2 text-sm text-primary">
+            <FileText className="w-4 h-4" /> مشاهده نسخه بارگذاری‌شده
+          </button>
+        ) : (
+          <p className="text-sm text-muted-foreground">نسخه‌ای بارگذاری نشده است.</p>
+        )}
+        <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-muted cursor-pointer text-sm w-fit">
+          <Upload className="w-4 h-4" /> بارگذاری نسخه پزشک
+          <input type="file" className="hidden" onChange={(e) => e.target.files?.[0] && uploadRx(e.target.files[0])} />
+        </label>
+      </div>
+
+      <div className="bg-card rounded-2xl shadow-card p-6 space-y-3">
+        <h3 className="font-bold">نتیجه کمیسیون</h3>
+        {votes.length ? votes.map((v) => (
+          <div key={v.id} className="border border-border rounded-xl p-4 text-sm space-y-1">
+            <p className={v.approved ? 'text-emerald-600 font-bold' : 'text-destructive font-bold'}>
+              {v.approved ? 'موافقت شد' : 'مخالفت شد'}
+            </p>
+            {v.medication_name && <p><span className="text-muted-foreground">دارو: </span>{v.medication_name}</p>}
+            {v.daily_dose != null && <p><span className="text-muted-foreground">دوز روزانه: </span>{v.daily_dose}</p>}
+            {v.notes && <p className="text-muted-foreground">{v.notes}</p>}
+          </div>
+        )) : <p className="text-sm text-muted-foreground">هنوز رأیی ثبت نشده است.</p>}
+      </div>
+
+
       {(row.status === 'rejected' || row.status === 'reappeal') && (
         <div className="bg-card rounded-2xl shadow-card p-6 space-y-3">
           <h3 className="font-bold">ثبت اعتراض / درخواست بررسی مجدد</h3>
