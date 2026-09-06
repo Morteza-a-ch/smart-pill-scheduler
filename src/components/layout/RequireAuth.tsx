@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth, AppRole } from '@/hooks/useAuth';
 import { AppLayout } from './AppLayout';
 import { Loader2 } from 'lucide-react';
+import { OPEN_PREVIEW } from '@/config/previewAccess';
 
 export function RequireAuth({ children, roles }: { children: ReactNode; roles?: AppRole[] }) {
   const { user, role, loading } = useAuth();
