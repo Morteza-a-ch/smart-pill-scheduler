@@ -16,9 +16,9 @@ export function RequireAuth({ children, roles }: { children: ReactNode; roles?: 
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!OPEN_PREVIEW && !user) return <Navigate to="/auth" replace />;
 
-  if (roles && role && !roles.includes(role)) {
+  if (!OPEN_PREVIEW && roles && role && !roles.includes(role)) {
     return (
       <AppLayout>
         <div className="schedule-container text-center py-12">
