@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth, roleLabels, AppRole } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { OPEN_PREVIEW } from '@/config/previewAccess';
 import {
   Stethoscope, LayoutDashboard, User, Wallet, FolderOpen, FileText,
   Users, LogOut, Calculator, Gavel, ClipboardList,
@@ -26,7 +27,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const { profile, role, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const items = navItems.filter((i) => role && i.roles.includes(role));
+  const items = OPEN_PREVIEW && !role ? navItems : navItems.filter((i) => role && i.roles.includes(role));
   const fullName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : '';
 
   return (
@@ -47,13 +48,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <p className="text-sm font-medium">{fullName || 'کاربر'}</p>
               <p className="text-xs text-primary-foreground/80">{role ? roleLabels[role] : ''}</p>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={async () => { await signOut(); navigate('/auth', { replace: true }); }}
-            >
-              <LogOut className="w-4 h-4 ml-1" /> خروج
-            </Button>
+            {profile ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={async () => { await signOut(); navigate('/auth', { replace: true }); }}
+              >
+                <LogOut className="w-4 h-4 ml-1" /> خروج
+              </Button>
+            ) : (
+              <Button variant="secondary" size="sm" onClick={() => navigate('/auth')}>
+                ورود
+              </Button>
+            )}
           </div>
         </div>
       </header>
