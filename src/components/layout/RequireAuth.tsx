@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth, AppRole } from '@/hooks/useAuth';
 import { AppLayout } from './AppLayout';
 import { Loader2 } from 'lucide-react';
+import { OPEN_PREVIEW } from '@/config/previewAccess';
 
 export function RequireAuth({ children, roles }: { children: ReactNode; roles?: AppRole[] }) {
   const { user, role, loading } = useAuth();
@@ -15,9 +16,9 @@ export function RequireAuth({ children, roles }: { children: ReactNode; roles?: 
     );
   }
 
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!OPEN_PREVIEW && !user) return <Navigate to="/auth" replace />;
 
-  if (roles && role && !roles.includes(role)) {
+  if (!OPEN_PREVIEW && roles && role && !roles.includes(role)) {
     return (
       <AppLayout>
         <div className="schedule-container text-center py-12">
